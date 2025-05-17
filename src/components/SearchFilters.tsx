@@ -305,8 +305,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                         filters.priceRange[0],
                         filters.priceRange[1],
                       ]}
-                      max={1000000}
-                      step={10000}
+                      max={500000000}
+                      step={1000000}
                       onValueChange={handlePriceRangeChange}
                       className="mt-6"
                     />

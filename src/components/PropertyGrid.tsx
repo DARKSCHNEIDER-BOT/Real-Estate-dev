@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./ui/pagination";
+import { fetchProperties } from "@/lib/api";
 
 interface Property {
   id: string;
@@ -37,29 +38,20 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
   onFavoriteToggle = () => {},
   onInquire = () => {},
 }) => {
-  const [properties, setProperties] = useState(propProperties || []);
+  const [properties, setProperties] = useState(
+    propProperties || defaultProperties,
+  );
   const [loading, setLoading] = useState(propLoading);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!propProperties) {
-      fetchPropertiesData();
+      // In a real app, this would fetch from API
+      // For now, we'll just use the default properties
+      setProperties(defaultProperties);
     }
   }, [propProperties]);
 
-  const fetchPropertiesData = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchProperties();
-      setProperties(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load properties");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
   const [currentPage, setCurrentPage] = useState(1);
   const propertiesPerPage = 6;
 

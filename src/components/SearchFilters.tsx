@@ -183,6 +183,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     };
 
     onSearch(apiFilters);
+    console.log("Applying filters:", apiFilters);
   };
 
   const formatPrice = (price: number) => {
@@ -194,7 +195,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   };
 
   return (
-    <div className={`w-full bg-white rounded-lg shadow-md p-4 ${className}`}>
+    <div
+      className={`w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 ${className}`}
+    >
       <div className="flex flex-col space-y-4">
         {/* Main search bar and expand button */}
         <div className="flex items-center gap-2">
@@ -306,7 +309,7 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
                         filters.priceRange[1],
                       ]}
                       max={500000000}
-                      step={1000000}
+                      step={5000000}
                       onValueChange={handlePriceRangeChange}
                       className="mt-6"
                     />

@@ -67,7 +67,7 @@ const PropertyCard = ({
 
   return (
     <Card
-      className="overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer bg-white"
+      className="overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer bg-white dark:bg-gray-800"
       onClick={handleCardClick}
     >
       <div className="relative">

@@ -20,7 +20,7 @@ const Logo: React.FC<LogoProps> = ({ className, size = "md" }) => {
         <Home className="h-5 w-5" />
       </div>
       <h1 className={cn("font-bold tracking-tight", sizeClasses[size])}>
-        <span>Nigerian</span>
+        <span className="dark:text-white">Nigerian</span>
         <span className="text-primary">Estates</span>
       </h1>
     </div>

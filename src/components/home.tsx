@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,12 +13,17 @@ import { Search, Menu, User, LogOut, Bell } from "lucide-react";
 import PropertyGrid from "./PropertyGrid";
 import SearchFilters from "./SearchFilters";
 import AuthModal from "./AuthModal";
+import { searchProperties } from "@/lib/propertyApi";
 
 const Home = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState("buy");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [properties, setProperties] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchFilters, setSearchFilters] = useState({});
 
   // Mock user data - in a real app this would come from authentication state
   const user = isLoggedIn
@@ -36,8 +41,39 @@ const Home = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    setIsLoggedIn(false);
   };
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      setSearchFilters({
+        ...searchFilters,
+        location: searchQuery,
+      });
+    }
+  };
+
+  const handleFilterChange = (filters) => {
+    setSearchFilters(filters);
+  };
+
+  useEffect(() => {
+    const fetchFilteredProperties = async () => {
+      if (Object.keys(searchFilters).length === 0) return;
+
+      setIsLoading(true);
+      try {
+        const results = await searchProperties(searchFilters);
+        setProperties(results);
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFilteredProperties();
+  }, [searchFilters]);
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -153,9 +189,15 @@ const Home = () => {
                     <Input
                       placeholder="Search by location, ZIP code, or address"
                       className="pl-10 pr-4 py-6 text-base rounded-l-lg rounded-r-none border-r-0"
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={searchQuery}
                     />
                   </div>
-                  <Button size="lg" className="rounded-l-none px-8 py-6">
+                  <Button
+                    size="lg"
+                    className="rounded-l-none px-8 py-6"
+                    onClick={handleSearch}
+                  >
                     Search
                   </Button>
                 </div>
@@ -196,7 +238,7 @@ const Home = () => {
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-4 py-8">
         {/* Search Filters */}
-        <SearchFilters />
+        <SearchFilters onSearch={handleFilterChange} />
 
         {/* Featured Properties Section */}
         <section className="my-8">
@@ -204,13 +246,18 @@ const Home = () => {
             <h2 className="text-2xl font-bold">Featured Properties</h2>
             <Button variant="outline">View All</Button>
           </div>
-          <PropertyGrid />
+          <PropertyGrid properties={properties} loading={isLoading} />
         </section>
 
         {/* Recent Properties Section */}
-        <section className="my-12">
+        <section className="py-12 container mx-auto px-4">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Recent Properties</h2>
+            <div>
+              <h2 className="text-2xl font-bold">Recent Properties</h2>
+              <p className="text-muted-foreground">
+                Browse our latest listings
+              </p>
+            </div>
             <Button variant="outline">View All</Button>
           </div>
           <PropertyGrid />
@@ -290,7 +337,7 @@ const Home = () => {
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
             <p>
-              &copy; {new Date().getFullYear()} RealEstateHub. All rights
+              &copy; {new Date().getFullYear()} NigerianEstates. All rights
               reserved.
             </p>
           </div>

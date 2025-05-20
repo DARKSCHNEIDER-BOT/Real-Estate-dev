@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "./ui/pagination";
+import { fetchProperties } from "@/lib/api";
 
 interface Property {
   id: string;
@@ -37,29 +38,22 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
   onFavoriteToggle = () => {},
   onInquire = () => {},
 }) => {
-  const [properties, setProperties] = useState(propProperties || []);
+  const [properties, setProperties] = useState(
+    propProperties || defaultProperties,
+  );
   const [loading, setLoading] = useState(propLoading);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!propProperties) {
-      fetchPropertiesData();
+    if (propProperties) {
+      setProperties(propProperties);
+    } else {
+      // In a real app, this would fetch from API
+      // For now, we'll just use the default properties
+      setProperties(defaultProperties);
     }
   }, [propProperties]);
 
-  const fetchPropertiesData = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchProperties();
-      setProperties(data);
-      setError(null);
-    } catch (err) {
-      setError("Failed to load properties");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
   const [currentPage, setCurrentPage] = useState(1);
   const propertiesPerPage = 6;
 
@@ -111,7 +105,19 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
         {currentProperties.map((property) => (
           <PropertyCard
             key={property.id}
-            property={property}
+            id={property.id}
+            title={property.title}
+            price={property.price}
+            location={property.location}
+            type={property.status === "For Sale" ? "sale" : "rent"}
+            propertyType={
+              property.type ? property.type.toLowerCase() : "property"
+            }
+            bedrooms={property.bedrooms}
+            bathrooms={property.bathrooms}
+            area={property.squareFootage}
+            image={property.imageUrl}
+            isFavorite={property.isFavorite}
             onFavoriteToggle={() => onFavoriteToggle(property.id)}
             onInquire={() => onInquire(property.id)}
           />

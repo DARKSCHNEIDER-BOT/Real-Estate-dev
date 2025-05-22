@@ -45,7 +45,7 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (propProperties) {
+    if (propProperties && propProperties.length > 0) {
       setProperties(propProperties);
     } else {
       // In a real app, this would fetch from API
@@ -115,7 +115,7 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
             }
             bedrooms={property.bedrooms}
             bathrooms={property.bathrooms}
-            area={property.squareFootage}
+            area={property.squareFootage || property.area}
             image={property.imageUrl}
             isFavorite={property.isFavorite}
             onFavoriteToggle={() => onFavoriteToggle(property.id)}

@@ -13,7 +13,7 @@ import { Search, Menu, User, LogOut, Bell } from "lucide-react";
 import PropertyGrid from "./PropertyGrid";
 import SearchFilters from "./SearchFilters";
 import AuthModal from "./AuthModal";
-import { searchProperties } from "@/lib/propertyApi";
+import { searchProperties, getRecentProperties } from "@/lib/propertyApi";
 
 const Home = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -22,6 +22,7 @@ const Home = () => {
   const [activeTab, setActiveTab] = useState("buy");
   const [searchQuery, setSearchQuery] = useState("");
   const [properties, setProperties] = useState([]);
+  const [recentProperties, setRecentProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
 
@@ -49,6 +50,12 @@ const Home = () => {
       setSearchFilters({
         ...searchFilters,
         location: searchQuery,
+        status:
+          activeTab === "buy"
+            ? "sale"
+            : activeTab === "rent"
+              ? "rent"
+              : undefined,
       });
     }
   };
@@ -75,96 +82,21 @@ const Home = () => {
     fetchFilteredProperties();
   }, [searchFilters]);
 
+  useEffect(() => {
+    const fetchRecentProperties = async () => {
+      try {
+        const recent = await getRecentProperties();
+        setRecentProperties(recent);
+      } catch (error) {
+        console.error("Error fetching recent properties:", error);
+      }
+    };
+
+    fetchRecentProperties();
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="hidden md:block">
-              <h1 className="text-xl font-bold">
-                RealEstate<span className="text-primary">Hub</span>
-              </h1>
-            </div>
-            <Button
-              variant="outline"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Tabs
-              value={activeTab}
-              onValueChange={setActiveTab}
-              className="w-[400px]"
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="buy">Buy</TabsTrigger>
-                <TabsTrigger value="rent">Rent</TabsTrigger>
-                <TabsTrigger value="sell">Sell</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </nav>
-
-          {/* User actions */}
-          <div className="flex items-center gap-4">
-            {isLoggedIn ? (
-              <>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="h-5 w-5" />
-                  <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-primary"></span>
-                </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="flex items-center gap-2"
-                      size="sm"
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.avatar} alt={user?.name} />
-                        <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span className="hidden md:inline-block">
-                        {user?.name}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Logout</span>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </>
-            ) : (
-              <>
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsAuthModalOpen(true)}
-                >
-                  Sign In
-                </Button>
-                <Button onClick={() => setIsAuthModalOpen(true)}>
-                  Sign Up
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </header>
-
+    <div className="bg-background">
       {/* Hero Section */}
       <section className="relative w-full bg-gradient-to-r from-blue-50 to-indigo-50 py-20">
         <div className="container mx-auto px-4 text-center">
@@ -209,9 +141,15 @@ const Home = () => {
                     <Input
                       placeholder="Search rental properties"
                       className="pl-10 pr-4 py-6 text-base rounded-l-lg rounded-r-none border-r-0"
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      value={searchQuery}
                     />
                   </div>
-                  <Button size="lg" className="rounded-l-none px-8 py-6">
+                  <Button
+                    size="lg"
+                    className="rounded-l-none px-8 py-6"
+                    onClick={handleSearch}
+                  >
                     Search
                   </Button>
                 </div>
@@ -260,7 +198,7 @@ const Home = () => {
             </div>
             <Button variant="outline">View All</Button>
           </div>
-          <PropertyGrid />
+          <PropertyGrid properties={recentProperties} loading={false} />
         </section>
       </main>
 
@@ -343,13 +281,6 @@ const Home = () => {
           </div>
         </div>
       </footer>
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLogin={handleLogin}
-      />
     </div>
   );
 };

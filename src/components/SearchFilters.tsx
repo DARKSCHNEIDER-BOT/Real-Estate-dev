@@ -65,6 +65,19 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
     { id: "garden", label: "Garden" },
   ];
 
+  const popularCities = [
+    { value: "Ikoyi", label: "Ikoyi" },
+    { value: "Banana Island", label: "Banana Island" },
+    { value: "Victoria Island", label: "Victoria Island" },
+    { value: "Eko Hotel", label: "Eko Hotel" },
+    { value: "Lekki", label: "Lekki" },
+    { value: "Ajah", label: "Ajah" },
+    { value: "Ikeja", label: "Ikeja" },
+    { value: "Yaba", label: "Yaba" },
+    { value: "Surulere", label: "Surulere" },
+    { value: "Eko Atlantic", label: "Eko Atlantic" },
+  ];
+
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilters({ ...filters, location: e.target.value });
     updateActiveFilters("location", e.target.value);
@@ -178,12 +191,11 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
       maxPrice: filters.priceRange[1],
       bedrooms: filters.bedrooms !== "Any" ? filters.bedrooms : undefined,
       bathrooms: filters.bathrooms !== "Any" ? filters.bathrooms : undefined,
-      amenities:
-        filters.amenities.length > 0 ? filters.amenities.join(",") : undefined,
+      amenities: filters.amenities.length > 0 ? filters.amenities : undefined,
     };
 
-    onSearch(apiFilters);
     console.log("Applying filters:", apiFilters);
+    onSearch(apiFilters);
   };
 
   const formatPrice = (price: number) => {
@@ -213,15 +225,39 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
               className="pl-10 pr-4 h-12 w-full"
             />
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-12 px-4 flex items-center gap-2"
-          >
-            <Filter size={18} />
-            Filters
-            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </Button>
+          <div className="relative group">
+            <Button
+              variant="outline"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-12 px-4 flex items-center gap-2"
+            >
+              <Filter size={18} />
+              Filters
+              {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </Button>
+
+            {/* Dropdown on hover */}
+            <div className="absolute right-0 mt-1 w-64 bg-white dark:bg-gray-800 shadow-lg rounded-md overflow-hidden z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 ease-in-out">
+              <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+                <h4 className="font-medium text-sm">Popular Locations</h4>
+              </div>
+              <div className="p-2">
+                {popularCities.map((city) => (
+                  <button
+                    key={city.value}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors"
+                    onClick={() => {
+                      setFilters({ ...filters, location: city.value });
+                      updateActiveFilters("location", city.value);
+                      handleApply();
+                    }}
+                  >
+                    {city.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
           <Button className="h-12 px-6" onClick={handleApply}>
             Search
           </Button>
@@ -265,6 +301,29 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
         {/* Expanded filters */}
         {isExpanded && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t">
+            {/* Popular Cities */}
+            <div className="space-y-2">
+              <Label>Popular Cities</Label>
+              <Select
+                value={filters.location}
+                onValueChange={(value) => {
+                  setFilters({ ...filters, location: value });
+                  updateActiveFilters("location", value);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select city" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any city</SelectItem>
+                  {popularCities.map((city) => (
+                    <SelectItem key={city.value} value={city.value}>
+                      {city.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             {/* Property Type */}
             <div className="space-y-2">
               <Label>Property Type</Label>

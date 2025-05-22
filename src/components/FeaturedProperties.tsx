@@ -111,9 +111,16 @@ const FeaturedProperties = () => {
               >
                 <div className="relative">
                   <img
-                    src={property.imageUrl}
+                    src={
+                      property.imageUrl ||
+                      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80"
+                    }
                     alt={property.title}
                     className="w-full h-64 object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80";
+                    }}
                   />
                   <Badge className="absolute top-4 left-4 bg-primary text-white">
                     Featured

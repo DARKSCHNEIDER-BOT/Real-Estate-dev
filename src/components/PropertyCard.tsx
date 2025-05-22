@@ -73,9 +73,16 @@ const PropertyCard = ({
       <div className="relative">
         <AspectRatio ratio={16 / 9}>
           <img
-            src={image}
+            src={
+              image ||
+              "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80"
+            }
             alt={title}
             className="object-cover w-full h-full rounded-t-md"
+            onError={(e) => {
+              e.currentTarget.src =
+                "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80";
+            }}
           />
         </AspectRatio>
         <div className="absolute top-2 left-2 flex gap-2">

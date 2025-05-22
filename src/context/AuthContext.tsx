@@ -1,11 +1,14 @@
 import React, { createContext, useState, useEffect, useContext } from "react";
-import { login, register, getUserProfile } from "@/lib/api";
+import { login, register, getUserProfile, socialLogin } from "@/lib/api";
+import { toast } from "@/components/ui/use-toast";
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  provider?: string;
+  providerId?: string;
 }
 
 interface AuthContextType {
@@ -20,6 +23,7 @@ interface AuthContextType {
     password: string,
     role?: string,
   ) => Promise<void>;
+  socialLogin: (provider: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -65,8 +69,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(data.user);
       setToken(data.token);
       localStorage.setItem("token", data.token);
+      toast({
+        title: "Login successful",
+        description: "Welcome back to RealEstateHub!",
+      });
+      return data;
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Login failed");
+      const errorMessage =
+        error instanceof Error ? error.message : "Login failed";
+      setError(errorMessage);
+      toast({
+        title: "Login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +102,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setUser(data.user);
       setToken(data.token);
       localStorage.setItem("token", data.token);
+      toast({
+        title: "Registration successful",
+        description: "Your account has been created successfully!",
+      });
+      return data;
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Registration failed");
+      const errorMessage =
+        error instanceof Error ? error.message : "Registration failed";
+      setError(errorMessage);
+      toast({
+        title: "Registration failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSocialLogin = async (provider: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await socialLogin(provider);
+      setUser(data.user);
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
+      toast({
+        title: "Social login successful",
+        description: `You've successfully logged in with ${provider}!`,
+      });
+      return data;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : `${provider} login failed`;
+      setError(errorMessage);
+      toast({
+        title: "Social login failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      throw error;
     } finally {
       setIsLoading(false);
     }
@@ -96,6 +154,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    toast({
+      title: "Logged out",
+      description: "You have been successfully logged out.",
+    });
   };
 
   return (
@@ -107,6 +169,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error,
         login: loginUser,
         register: registerUser,
+        socialLogin: handleSocialLogin,
         logout,
       }}
     >

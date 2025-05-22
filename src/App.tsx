@@ -87,10 +87,9 @@ function App() {
                 onValueChange={setActiveTab}
                 className="w-[400px] ml-6"
               >
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="buy">Buy</TabsTrigger>
                   <TabsTrigger value="rent">Rent</TabsTrigger>
-                  <TabsTrigger value="sell">Sell</TabsTrigger>
                 </TabsList>
               </Tabs>
             </nav>

@@ -2,60 +2,30 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Search, Menu, User, LogOut, Bell } from "lucide-react";
+import { Search, Clock } from "lucide-react";
 import PropertyGrid from "./PropertyGrid";
 import SearchFilters from "./SearchFilters";
-import AuthModal from "./AuthModal";
 import { searchProperties, getRecentProperties } from "@/lib/propertyApi";
+import { useAuth } from "@/context/AuthContext";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 
 const Home = () => {
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("buy");
   const [searchQuery, setSearchQuery] = useState("");
   const [properties, setProperties] = useState([]);
   const [recentProperties, setRecentProperties] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchFilters, setSearchFilters] = useState({});
-
-  // Mock user data - in a real app this would come from authentication state
-  const user = isLoggedIn
-    ? {
-        name: "John Doe",
-        email: "john@example.com",
-        avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
-      }
-    : null;
-
-  const handleLogin = () => {
-    // This would be replaced with actual authentication logic
-    setIsLoggedIn(true);
-    setIsAuthModalOpen(false);
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-  };
+  const [propertyAvailability, setPropertyAvailability] = useState({});
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
       setSearchFilters({
         ...searchFilters,
         location: searchQuery,
-        status:
-          activeTab === "buy"
-            ? "sale"
-            : activeTab === "rent"
-              ? "rent"
-              : undefined,
+        status: activeTab === "buy" ? "sale" : "rent",
       });
     }
   };
@@ -72,6 +42,65 @@ const Home = () => {
       try {
         const results = await searchProperties(searchFilters);
         setProperties(results);
+
+        // Initialize availability data
+        const availabilityData = {};
+        results.forEach((property) => {
+          availabilityData[property.id] = {
+            totalUnits:
+              property.totalUnits || Math.floor(Math.random() * 10) + 1,
+            availableUnits:
+              property.availableUnits || Math.floor(Math.random() * 10) + 1,
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+        setPropertyAvailability(availabilityData);
+
+        // Simulate real-time updates
+        const interval = setInterval(() => {
+          const randomPropertyId =
+            results[Math.floor(Math.random() * results.length)]?.id;
+          if (randomPropertyId) {
+            setPropertyAvailability((prev) => {
+              const newAvailability = { ...prev };
+              if (newAvailability[randomPropertyId]) {
+                const currentAvailable =
+                  newAvailability[randomPropertyId].availableUnits;
+                const newAvailable = Math.max(0, currentAvailable - 1);
+
+                newAvailability[randomPropertyId] = {
+                  ...newAvailability[randomPropertyId],
+                  availableUnits: newAvailable,
+                  lastUpdated: new Date().toISOString(),
+                };
+
+                // Show notification for low availability
+                if (newAvailable <= 2 && newAvailable > 0) {
+                  const property = results.find(
+                    (p) => p.id === randomPropertyId,
+                  );
+                  toast({
+                    title: "Limited Availability!",
+                    description: `Only ${newAvailable} units left for property ${property?.title || "this property"}`,
+                    variant: "warning",
+                  });
+                } else if (newAvailable === 0) {
+                  const property = results.find(
+                    (p) => p.id === randomPropertyId,
+                  );
+                  toast({
+                    title: "Property Unavailable",
+                    description: `${property?.title || "This property"} is now fully booked!`,
+                    variant: "destructive",
+                  });
+                }
+              }
+              return newAvailability;
+            });
+          }
+        }, 30000); // Update every 30 seconds
+
+        return () => clearInterval(interval);
       } catch (error) {
         console.error("Error fetching properties:", error);
       } finally {
@@ -87,6 +116,23 @@ const Home = () => {
       try {
         const recent = await getRecentProperties();
         setRecentProperties(recent);
+
+        // Initialize availability data for recent properties
+        const availabilityData = {};
+        recent.forEach((property) => {
+          availabilityData[property.id] = {
+            totalUnits:
+              property.totalUnits || Math.floor(Math.random() * 10) + 1,
+            availableUnits:
+              property.availableUnits || Math.floor(Math.random() * 10) + 1,
+            lastUpdated: new Date().toISOString(),
+          };
+        });
+
+        setPropertyAvailability((prev) => ({
+          ...prev,
+          ...availabilityData,
+        }));
       } catch (error) {
         console.error("Error fetching recent properties:", error);
       }
@@ -94,6 +140,44 @@ const Home = () => {
 
     fetchRecentProperties();
   }, []);
+
+  // Function to render availability badge
+  const renderAvailabilityBadge = (propertyId) => {
+    const availability = propertyAvailability[propertyId];
+    if (!availability) return null;
+
+    const { availableUnits, totalUnits, lastUpdated } = availability;
+    const percentAvailable = (availableUnits / totalUnits) * 100;
+
+    let variant = "default";
+    let text = `${availableUnits} of ${totalUnits} available`;
+
+    if (availableUnits === 0) {
+      variant = "destructive";
+      text = "Fully Booked";
+    } else if (percentAvailable <= 20) {
+      variant = "destructive";
+      text = `Only ${availableUnits} left!`;
+    } else if (percentAvailable <= 50) {
+      variant = "warning";
+      text = `${availableUnits} units available`;
+    }
+
+    const timeAgo = new Date(lastUpdated);
+    const timeAgoStr = timeAgo.toLocaleTimeString();
+
+    return (
+      <div className="flex flex-col gap-1">
+        <Badge variant={variant} className="self-start">
+          {text}
+        </Badge>
+        <div className="flex items-center text-xs text-muted-foreground">
+          <Clock className="h-3 w-3 mr-1" />
+          <span>Updated at {timeAgoStr}</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-background">
@@ -108,11 +192,15 @@ const Home = () => {
             country.
           </p>
           <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-4">
-            <Tabs defaultValue="buy" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
+            <Tabs
+              defaultValue="buy"
+              className="w-full"
+              onValueChange={setActiveTab}
+              value={activeTab}
+            >
+              <TabsList className="grid w-full grid-cols-2 mb-6">
                 <TabsTrigger value="buy">Buy</TabsTrigger>
                 <TabsTrigger value="rent">Rent</TabsTrigger>
-                <TabsTrigger value="sell">Sell</TabsTrigger>
               </TabsList>
               <TabsContent value="buy" className="space-y-4">
                 <div className="flex items-center">
@@ -154,20 +242,6 @@ const Home = () => {
                   </Button>
                 </div>
               </TabsContent>
-              <TabsContent value="sell" className="space-y-4">
-                <div className="flex items-center">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                      placeholder="Enter your property address"
-                      className="pl-10 pr-4 py-6 text-base rounded-l-lg rounded-r-none border-r-0"
-                    />
-                  </div>
-                  <Button size="lg" className="rounded-l-none px-8 py-6">
-                    Get Estimate
-                  </Button>
-                </div>
-              </TabsContent>
             </Tabs>
           </div>
         </div>
@@ -181,10 +255,36 @@ const Home = () => {
         {/* Featured Properties Section */}
         <section className="my-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Featured Properties</h2>
+            <div>
+              <h2 className="text-2xl font-bold">Featured Properties</h2>
+              <p className="text-muted-foreground">
+                Real-time availability updates
+              </p>
+            </div>
             <Button variant="outline">View All</Button>
           </div>
-          <PropertyGrid properties={properties} loading={isLoading} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {properties.slice(0, 6).map((property) => (
+              <div key={property.id} className="relative">
+                <PropertyGrid.Card
+                  id={property.id}
+                  title={property.title}
+                  price={property.price}
+                  location={property.location}
+                  type={property.status === "For Sale" ? "sale" : "rent"}
+                  propertyType={property.type?.toLowerCase() || "property"}
+                  bedrooms={property.bedrooms}
+                  bathrooms={property.bathrooms}
+                  area={property.squareFootage || property.area}
+                  image={property.imageUrl}
+                  isFavorite={property.isFavorite}
+                />
+                <div className="absolute top-2 right-2">
+                  {renderAvailabilityBadge(property.id)}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Recent Properties Section */}

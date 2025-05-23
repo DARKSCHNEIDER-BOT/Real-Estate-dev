@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -18,12 +18,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { AlertCircle, Loader2, Apple, Facebook } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Apple,
+  Facebook,
+  CheckCircle,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 interface AuthModalProps {
   isOpen?: boolean;
@@ -47,6 +55,7 @@ const AuthModal = ({
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Form states
   const [email, setEmail] = useState("");
@@ -54,18 +63,31 @@ const AuthModal = ({
   const [name, setName] = useState("");
   const [role, setRole] = useState("user");
 
+  // Clear success message when tab changes
+  useEffect(() => {
+    setSuccess(null);
+    setError(null);
+  }, [activeTab]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       await login(email, password);
+      setSuccess("Login successful! Welcome back to RealEstateHub!");
       toast({
         title: "Login successful",
         description: "Welcome back to RealEstateHub!",
+        className: "bg-green-50 border-green-200",
       });
-      onSuccess?.();
+
+      // Delay closing the modal to show success message
+      setTimeout(() => {
+        onSuccess?.();
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -77,14 +99,21 @@ const AuthModal = ({
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       await register(name, email, password, role);
+      setSuccess("Registration successful! Your account has been created.");
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully!",
+        className: "bg-green-50 border-green-200",
       });
-      onSuccess?.();
+
+      // Delay closing the modal to show success message
+      setTimeout(() => {
+        onSuccess?.();
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -95,27 +124,60 @@ const AuthModal = ({
   const handleSocialLogin = (provider: string) => {
     setIsLoading(true);
     setError(null);
+    setSuccess(null);
 
     // In a real implementation, this would redirect to the OAuth provider
     // For now, we'll simulate a successful login after a delay
     setTimeout(() => {
       setIsLoading(false);
+      setSuccess(`Successfully logged in with ${provider}!`);
+
+      // Create a mock user for the social login
+      const mockUser = {
+        id: `${provider.toLowerCase()}-user-${Date.now()}`,
+        name:
+          provider === "Google"
+            ? "Google User"
+            : provider === "Apple"
+              ? "Apple User"
+              : "Facebook User",
+        email: `${provider.toLowerCase()}user@example.com`,
+        role: "user",
+        provider: provider,
+        providerId: `${provider.toLowerCase()}-${Date.now()}`,
+        avatar:
+          provider === "Google"
+            ? "https://api.dicebear.com/7.x/avataaars/svg?seed=google"
+            : provider === "Apple"
+              ? "https://api.dicebear.com/7.x/avataaars/svg?seed=apple"
+              : "https://api.dicebear.com/7.x/avataaars/svg?seed=facebook",
+      };
+
+      // Store the mock user in localStorage to simulate persistence
+      localStorage.setItem("user", JSON.stringify(mockUser));
+      localStorage.setItem("token", `mock-token-${Date.now()}`);
+
       toast({
         title: "Social login successful",
         description: `You've successfully logged in with ${provider}!`,
+        className: "bg-green-50 border-green-200",
       });
-      onSuccess?.();
+
+      // Delay closing the modal to show success message
+      setTimeout(() => {
+        onSuccess?.();
+      }, 1500);
     }, 1500);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[450px] bg-white">
+      <DialogContent className="sm:max-w-[450px] bg-white max-h-[90vh] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-300">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-center">
-            Welcome to RealEstate
+          <DialogTitle className="text-2xl font-bold text-center animate-in slide-in-from-top-5">
+            Welcome to RealEstate<span className="text-primary">Hub</span>
           </DialogTitle>
-          <DialogDescription className="text-center">
+          <DialogDescription className="text-center animate-in slide-in-from-top-3 duration-500">
             Sign in to your account or create a new one
           </DialogDescription>
         </DialogHeader>
@@ -125,17 +187,39 @@ const AuthModal = ({
           onValueChange={(value) => setActiveTab(value as "login" | "signup")}
         >
           <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger
+              value="login"
+              className="data-[state=active]:animate-pulse"
+            >
+              Login
+            </TabsTrigger>
+            <TabsTrigger
+              value="signup"
+              className="data-[state=active]:animate-pulse"
+            >
+              Sign Up
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="login">
+          <TabsContent
+            value="login"
+            className="animate-in fade-in-50 duration-500"
+          >
             <Card>
               <CardContent className="pt-6">
                 {error && (
-                  <Alert variant="destructive" className="mb-4">
+                  <Alert
+                    variant="destructive"
+                    className="mb-4 animate-in shake-x-3"
+                  >
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {success && (
+                  <Alert className="mb-4 bg-green-50 text-green-800 border-green-200 animate-in slide-in-from-top-3">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertDescription>{success}</AlertDescription>
                   </Alert>
                 )}
                 <form onSubmit={handleLogin}>
@@ -149,6 +233,7 @@ const AuthModal = ({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <div className="grid gap-2">
@@ -169,11 +254,12 @@ const AuthModal = ({
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full transition-all duration-300 hover:shadow-md hover:bg-primary/90"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -197,11 +283,12 @@ const AuthModal = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Google")}
+                        className="transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -228,43 +315,61 @@ const AuthModal = ({
                           />
                           <path d="M1 1h22v22H1z" fill="none" />
                         </svg>
-                        Google
+                        <span className="sm:hidden md:inline">Google</span>
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Apple")}
+                        className="transition-all duration-200 hover:bg-gray-900 hover:text-white"
                       >
                         <Apple className="mr-2 h-4 w-4" />
-                        Apple
+                        <span className="sm:hidden md:inline">Apple</span>
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Facebook")}
+                        className="transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
                       >
                         <Facebook className="mr-2 h-4 w-4" />
-                        Facebook
+                        <span className="sm:hidden md:inline">Facebook</span>
                       </Button>
                     </div>
                   </div>
                 </form>
               </CardContent>
               <CardFooter className="flex justify-center border-t p-4">
-                <Button variant="link" onClick={() => setActiveTab("signup")}>
+                <Button
+                  variant="link"
+                  onClick={() => setActiveTab("signup")}
+                  className="transition-colors hover:text-primary"
+                >
                   Don&apos;t have an account? Sign up
                 </Button>
               </CardFooter>
             </Card>
           </TabsContent>
 
-          <TabsContent value="signup">
+          <TabsContent
+            value="signup"
+            className="animate-in fade-in-50 duration-500"
+          >
             <Card>
               <CardContent className="pt-6">
                 {error && (
-                  <Alert variant="destructive" className="mb-4">
+                  <Alert
+                    variant="destructive"
+                    className="mb-4 animate-in shake-x-3"
+                  >
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
+                {success && (
+                  <Alert className="mb-4 bg-green-50 text-green-800 border-green-200 animate-in slide-in-from-top-3">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <AlertDescription>{success}</AlertDescription>
                   </Alert>
                 )}
                 <form onSubmit={handleSignup}>
@@ -278,6 +383,7 @@ const AuthModal = ({
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <div className="grid gap-2">
@@ -289,6 +395,7 @@ const AuthModal = ({
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <div className="grid gap-2">
@@ -300,24 +407,39 @@ const AuthModal = ({
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
+                        className="transition-all duration-200 focus:ring-2 focus:ring-primary/20"
                       />
                     </div>
                     <div className="grid gap-2">
                       <Label>Account Type</Label>
-                      <RadioGroup value={role} onValueChange={setRole}>
-                        <div className="flex items-center space-x-2">
+                      <RadioGroup
+                        value={role}
+                        onValueChange={setRole}
+                        className="gap-2"
+                      >
+                        <div className="flex items-center space-x-2 rounded-md border p-2 transition-all hover:bg-accent">
                           <RadioGroupItem value="user" id="user" />
-                          <Label htmlFor="user">Regular User</Label>
+                          <Label
+                            htmlFor="user"
+                            className="flex-1 cursor-pointer"
+                          >
+                            Regular User
+                          </Label>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 rounded-md border p-2 transition-all hover:bg-accent">
                           <RadioGroupItem value="agent" id="agent" />
-                          <Label htmlFor="agent">Real Estate Agent</Label>
+                          <Label
+                            htmlFor="agent"
+                            className="flex-1 cursor-pointer"
+                          >
+                            Real Estate Agent
+                          </Label>
                         </div>
                       </RadioGroup>
                     </div>
                     <Button
                       type="submit"
-                      className="w-full"
+                      className="w-full transition-all duration-300 hover:shadow-md hover:bg-primary/90"
                       disabled={isLoading}
                     >
                       {isLoading ? (
@@ -341,11 +463,12 @@ const AuthModal = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Google")}
+                        className="transition-all duration-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -372,30 +495,36 @@ const AuthModal = ({
                           />
                           <path d="M1 1h22v22H1z" fill="none" />
                         </svg>
-                        Google
+                        <span className="sm:hidden md:inline">Google</span>
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Apple")}
+                        className="transition-all duration-200 hover:bg-gray-900 hover:text-white"
                       >
                         <Apple className="mr-2 h-4 w-4" />
-                        Apple
+                        <span className="sm:hidden md:inline">Apple</span>
                       </Button>
                       <Button
                         type="button"
                         variant="outline"
                         onClick={() => handleSocialLogin("Facebook")}
+                        className="transition-all duration-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
                       >
                         <Facebook className="mr-2 h-4 w-4" />
-                        Facebook
+                        <span className="sm:hidden md:inline">Facebook</span>
                       </Button>
                     </div>
                   </div>
                 </form>
               </CardContent>
               <CardFooter className="flex justify-center border-t p-4">
-                <Button variant="link" onClick={() => setActiveTab("login")}>
+                <Button
+                  variant="link"
+                  onClick={() => setActiveTab("login")}
+                  className="transition-colors hover:text-primary"
+                >
                   Already have an account? Login
                 </Button>
               </CardFooter>

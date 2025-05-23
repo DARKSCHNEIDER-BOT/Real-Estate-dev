@@ -80,9 +80,11 @@ const PropertyCard = ({
             alt={title}
             className="object-cover w-full h-full rounded-t-md"
             onError={(e) => {
+              console.log("Image failed to load:", image);
               e.currentTarget.src =
                 "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80";
             }}
+            loading="lazy"
           />
         </AspectRatio>
         <div className="absolute top-2 left-2 flex gap-2">

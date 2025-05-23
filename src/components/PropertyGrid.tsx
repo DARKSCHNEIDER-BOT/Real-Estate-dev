@@ -46,7 +46,14 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
 
   useEffect(() => {
     if (propProperties && propProperties.length > 0) {
-      setProperties(propProperties);
+      // Ensure all properties have valid image URLs
+      const propertiesWithImages = propProperties.map((property) => ({
+        ...property,
+        imageUrl:
+          property.imageUrl ||
+          "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
+      }));
+      setProperties(propertiesWithImages);
     } else {
       // In a real app, this would fetch from API
       // For now, we'll just use the default properties
@@ -116,7 +123,10 @@ const PropertyGrid: React.FC<PropertyGridProps> = ({
             bedrooms={property.bedrooms}
             bathrooms={property.bathrooms}
             area={property.squareFootage || property.area}
-            image={property.imageUrl}
+            image={
+              property.imageUrl ||
+              `https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=${property.id}`
+            }
             isFavorite={property.isFavorite}
             onFavoriteToggle={() => onFavoriteToggle(property.id)}
             onInquire={() => onInquire(property.id)}

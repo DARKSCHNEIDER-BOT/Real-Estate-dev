@@ -9,6 +9,7 @@ interface User {
   role: string;
   provider?: string;
   providerId?: string;
+  avatar?: string;
 }
 
 interface AuthContextType {
@@ -40,9 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     // Check if user is logged in from localStorage
     const storedToken = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("user");
+
     if (storedToken) {
       setToken(storedToken);
-      fetchUserProfile(storedToken);
+
+      // If we have a stored user (from social login), use that directly
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Error parsing stored user:", error);
+          fetchUserProfile(storedToken);
+        }
+      } else {
+        // Otherwise fetch the user profile
+        fetchUserProfile(storedToken);
+      }
     } else {
       setIsLoading(false);
     }
@@ -72,6 +89,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       toast({
         title: "Login successful",
         description: "Welcome back to RealEstateHub!",
+        className:
+          "animate-in slide-in-from-bottom-5 bg-green-50 border-green-200",
       });
       return data;
     } catch (error) {
@@ -82,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Login failed",
         description: errorMessage,
         variant: "destructive",
+        className: "animate-in shake-x-3",
       });
       throw error;
     } finally {
@@ -105,6 +125,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       toast({
         title: "Registration successful",
         description: "Your account has been created successfully!",
+        className:
+          "animate-in slide-in-from-bottom-5 bg-green-50 border-green-200",
       });
       return data;
     } catch (error) {
@@ -115,6 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Registration failed",
         description: errorMessage,
         variant: "destructive",
+        className: "animate-in shake-x-3",
       });
       throw error;
     } finally {
@@ -133,6 +156,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       toast({
         title: "Social login successful",
         description: `You've successfully logged in with ${provider}!`,
+        className:
+          "animate-in slide-in-from-bottom-5 bg-green-50 border-green-200",
       });
       return data;
     } catch (error) {
@@ -143,6 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         title: "Social login failed",
         description: errorMessage,
         variant: "destructive",
+        className: "animate-in shake-x-3",
       });
       throw error;
     } finally {
@@ -154,9 +180,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(null);
     setToken(null);
     localStorage.removeItem("token");
+    localStorage.removeItem("user"); // Also remove stored user data
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
+      className: "animate-in fade-in-50",
     });
   };
 

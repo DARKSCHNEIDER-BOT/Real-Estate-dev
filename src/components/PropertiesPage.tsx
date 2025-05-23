@@ -16,7 +16,14 @@ const PropertiesPage = () => {
       setIsLoading(true);
       try {
         const results = await getAllProperties();
-        setProperties(results);
+        // Ensure all properties have valid image URLs
+        const propertiesWithImages = results.map((property) => ({
+          ...property,
+          imageUrl:
+            property.imageUrl ||
+            "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
+        }));
+        setProperties(propertiesWithImages);
       } catch (error) {
         console.error("Error fetching properties:", error);
       } finally {
